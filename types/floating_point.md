@@ -113,7 +113,6 @@ if (std::fetestexcept(FE_INVALID)) {
 ```cpp
 #include <iostream>
 #include <cstdint>
-#include <bit>
 
 class SingleFloat {
     std::uint32_t data_;
