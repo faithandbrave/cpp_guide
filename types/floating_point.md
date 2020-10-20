@@ -107,7 +107,8 @@ if (std::fetestexcept(FE_INVALID)) {
 標準C++のソート関係アルゴリズムや集合クラスなどは、型が弱順序以上をもつことを要求する。浮動小数点数型は弱順序をもたず半順序ではあるが、入力にNaNが含まれていなければ弱順序とみなせる。
 
 
-## 1.0の作り方
+## マニアクス
+### 1.0の作り方
 指数部が8ビットだとしたら、指数部0b0111'1111 (MSBだけ0でそれ以外を1にする)、仮数部は0。2.0はその指数部に+1。
 
 ```cpp
@@ -152,6 +153,56 @@ int main()
     SingleFloat two{};
     two.set_exponent(0b0111'1111 + 1);
     std::cout << two.to_float() << std::endl; // 2
+}
+```
+
+### 無限大
+無限大は、指数部が最大である値。
+
+```cpp
+#include <iostream>
+#include <cstdint>
+
+class SingleFloat {
+    std::uint32_t data_;
+public:
+    static constexpr int exponent_bits = 8;
+    static constexpr int mantissa_bits = 23;
+    static constexpr int bits = 32;
+
+    static constexpr std::uint32_t max_exponent = (1 << exponent_bits) - 1;
+    static constexpr std::uint32_t max_mantissa = (1 << mantissa_bits) - 1;
+
+    std::uint32_t get_exponent() const noexcept {
+        return (data_ >> mantissa_bits) & max_exponent;
+    }
+
+    SingleFloat& set_exponent(std::uint32_t e) {
+        if (e > max_exponent) {
+            throw std::invalid_argument("over max exponent");
+        }
+        data_ = (data_ & ~(max_exponent << mantissa_bits)) | (e << mantissa_bits);
+        return *this;
+    }
+
+    float to_float() const {
+        float result = 0;
+        std::memcpy(&result, &data_, sizeof(float));
+        return result;
+    }
+
+    bool is_inf() const {
+        return get_exponent() == max_exponent;
+    }
+};
+
+SingleFloat make_inf() {
+    return SingleFloat{}.set_exponent(SingleFloat::max_exponent);
+}
+
+int main()
+{
+    std::cout << make_inf().to_float() << std::endl; // inf
 }
 ```
 
